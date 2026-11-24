@@ -4,8 +4,9 @@
 :root {
   --ink: #16240D; --olive: #4C7A1E; --oliveD: #35570F; --orange: #FF6A1F;
   --bg: #FFFCF5; --line: #EDE2CA; --white: #fff;
-  --ease: cubic-bezier(.2, .8, .2, 1);
-  --t-screen: 300ms;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --soft: cubic-bezier(.45, 0, .55, 1);
+  --t-screen: 380ms;
   --s: 1;
 }
 
@@ -34,7 +35,7 @@ img, svg { display: block; }
   box-shadow: 0 0 0 10px #241F15, 0 0 0 12px #3A3225, 0 18px 50px rgba(36, 31, 21, .28);
 }
 .screens { position: absolute; inset: 0; }
-.screen { position: absolute; inset: 0; width: 390px; height: 844px; }
+.screen { position: absolute; inset: 0; width: 390px; height: 844px; contain: layout paint; }
 .screen[hidden] { display: none; }
 
 /* ---------- screen transitions ---------- */
@@ -45,6 +46,7 @@ img, svg { display: block; }
 @keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
 @keyframes fadeOut     { from { opacity: 1 } to { opacity: 0 } }
 
+.a-push-in, .a-push-out, .a-pop-in, .a-pop-out, .a-fade-in, .a-fade-out { will-change: transform, opacity; backface-visibility: hidden }
 .a-push-in  { animation: inFromRight var(--t-screen) var(--ease) both; z-index: 2 }
 .a-push-out { animation: outToLeft   var(--t-screen) var(--ease) both; z-index: 1 }
 .a-pop-in   { animation: inFromLeft  var(--t-screen) var(--ease) both; z-index: 1 }
@@ -53,22 +55,69 @@ img, svg { display: block; }
 .a-fade-out { animation: fadeOut 180ms linear both; z-index: 1 }
 
 /* content settling in behind the transition: shows reading order, capped at 8 items */
-@keyframes rise { from { transform: translateY(10px); opacity: 0 } to { transform: none; opacity: 1 } }
-.screen.is-in [data-rise] { animation: rise 340ms var(--ease) both; animation-delay: calc(var(--i) * 45ms + 60ms) }
+@keyframes rise { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+/* starts after the screen has mostly settled, so two movements never fight each other */
+.screen.is-in [data-rise] { animation: rise 420ms var(--ease) both; animation-delay: calc(var(--i) * 50ms + 140ms) }
 
 /* ---------- data that grows ---------- */
 @keyframes grow { from { transform: scaleX(0) } to { transform: scaleX(1) } }
 .screen.is-in .r-grow { transform-origin: left center; animation: grow 540ms var(--ease) both; animation-delay: 220ms }
 
-/* ---------- illustration motion ---------- */
+/* ---------- illustration motion ----------
+   Every moving piece is its own layer (see art.js), moved with transform only, so it
+   runs on the GPU instead of repainting a big SVG each frame. */
 @keyframes spin { to { transform: rotate(360deg) } }
 .r-spin { transform-origin: 171px 108px; animation: spin 1100ms linear infinite }
-@keyframes slowspin { to { transform: rotate(360deg) } }
-.r-rays { transform-origin: 195px 228px; animation: slowspin 24s linear infinite }
-@keyframes drift { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
-.r-conf { animation: drift 3.4s ease-in-out infinite; animation-delay: var(--d, 0s) }
-@keyframes popIn { 0% { transform: scale(.94); opacity: 0 } 60% { transform: scale(1.015) } 100% { transform: none; opacity: 1 } }
-.screen.is-in[data-key="ready"] > .f > .s { animation: popIn 620ms var(--ease) both }
+.r-rays { will-change: transform; animation: spin 48s linear infinite }
+@keyframes hop {
+  0%, 100% { transform: translateY(0) scale(1.03, .97) }
+  50%      { transform: translateY(-18px) scale(.985, 1.015) }
+}
+.r-hop { will-change: transform; transform-origin: 50% 100%; animation: hop 1.5s var(--soft) infinite }
+@keyframes shade {
+  0%, 100% { transform: scaleX(1); opacity: .24 }
+  50%      { transform: scaleX(.8); opacity: .12 }
+}
+.r-shade { will-change: transform, opacity; animation: shade 1.5s var(--soft) infinite }
+@keyframes waveL { from { transform: rotate(-9deg) } to { transform: rotate(11deg) } }
+@keyframes waveR { from { transform: rotate(9deg) } to { transform: rotate(-11deg) } }
+.arm-l { transform-box: fill-box; transform-origin: 100% 100%; animation: waveL .75s var(--soft) infinite alternate }
+.arm-r { transform-box: fill-box; transform-origin: 0% 100%; animation: waveR .75s var(--soft) infinite alternate; animation-delay: -.375s }
+@keyframes sway { from { transform: rotate(calc(-2.6deg * var(--sw, 1))) } to { transform: rotate(calc(2.6deg * var(--sw, 1))) } }
+.r-sway { will-change: transform; transform-origin: 50% 100%; animation: sway 3.2s var(--soft) infinite alternate }
+@keyframes cloudA { from { transform: translateX(0) } to { transform: translateX(34px) } }
+@keyframes cloudB { from { transform: translateX(0) } to { transform: translateX(-26px) } }
+.r-cloud { will-change: transform; animation: cloudA 9s var(--soft) infinite alternate }
+.r-cloud2 { animation-name: cloudB; animation-duration: 11s }
+@keyframes drift {
+  0%, 100% { transform: translateY(0) rotate(0deg) }
+  50%      { transform: translateY(-12px) rotate(24deg) }
+}
+.r-conf { will-change: transform; animation: drift 3.4s var(--soft) infinite; animation-delay: var(--d, 0s) }
+
+/* ---------- lesson video + quiz ---------- */
+.vp-screen { cursor: pointer }
+.vp-big { transition: opacity 240ms var(--ease), transform 240ms var(--ease); box-shadow: 0 0 0 6px rgba(255,255,255,.35) }
+.is-play .vp-big { opacity: 0; transform: scale(.8); pointer-events: none }
+.vp-i-pause { display: none !important }
+.is-play .vp-i-play { display: none !important }
+.is-play .vp-i-pause { display: block !important }
+.vp-fill { will-change: width }
+.v-next, .q-next { transition: opacity 260ms var(--ease) }
+.v-next[aria-disabled="true"], .q-next[aria-disabled="true"] { opacity: .38; pointer-events: none }
+@keyframes nudge { 0%, 100% { transform: none } 40% { transform: translateY(-3px) } }
+.v-done .v-next:not([aria-disabled]) { animation: nudge 700ms var(--soft) 2 }
+
+.qi, .qfb { display: none !important }
+.qopt { transition: background-color 200ms, box-shadow 200ms, opacity 200ms }
+.qopt[data-state="ok"] { background: #E9F6D2 !important; box-shadow: inset 0 0 0 2px #4C7A1E !important }
+.qopt[data-state="no"] { background: #FFE2DB !important; box-shadow: inset 0 0 0 2px #C22A11 !important }
+.qopt[data-state="ok"] .qi-ok, .qopt[data-state="no"] .qi-no { display: block !important }
+.q-done .qopt:not([data-state]) { opacity: .5 }
+.q-done .qopt { pointer-events: none }
+.q-done.q-ok .qfb-ok, .q-done.q-no .qfb-no { display: flex !important; animation: rise 360ms var(--ease) both }
+@keyframes shake { 0%, 100% { transform: none } 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+.qopt[data-state="no"] { animation: shake 320ms var(--soft) }
 
 /* ---------- interaction states ---------- */
 .go, .chip, .act, [data-stepper] [data-act] { cursor: pointer; transition: filter 120ms, transform 90ms }

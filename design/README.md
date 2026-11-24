@@ -6,7 +6,7 @@
 |---|---|
 | `lib.js` | Token desain, komponen, dan validator skala |
 | `art.js` | Ilustrasi flat sebagai SVG |
-| `screens.js` | Susunan 39 layar |
+| `screens.js` | Susunan 43 layar |
 | `render_html.js` | Mengubah pohon desain menjadi HTML dan memeriksa kontras |
 | `build.js` | Menulis ulang `../screens.js` |
 

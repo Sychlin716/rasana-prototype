@@ -1,6 +1,6 @@
 // Flat illustrations (no outlines, flat fills, one mascot). Pure SVG strings.
 'use strict';
-const { C, S } = require('./lib');
+const { C, S, F } = require('./lib');
 
 const K = {
   ink: C.ink, gold: C.gold, goldD: '#E09B12', goldL: C.goldL, goldH: '#FFD86B', wheat: '#C98A0A',
@@ -26,12 +26,13 @@ function mouth(mood) {
   return `<path d="M70 93q10 12 20 0" stroke="${K.ink}" stroke-width="4.6" stroke-linecap="round"/>`;
 }
 // returns inner markup in a 160 x 146 box
-function rotiInner(mood = 'happy', arms = 'down') {
+function rotiInner(mood = 'happy', arms = 'down', shadow = true, anim = false) {
+  const c = (n) => (anim ? ` class="${n}"` : '');
   const armsBack = arms === 'up'
-    ? `<path d="M24 90L8 52" stroke="${K.goldD}" stroke-width="14" stroke-linecap="round"/><path d="M136 90l16-38" stroke="${K.goldD}" stroke-width="14" stroke-linecap="round"/>`
+    ? `<path${c('arm-l')} d="M24 90L8 52" stroke="${K.goldD}" stroke-width="14" stroke-linecap="round"/><path${c('arm-r')} d="M136 90l16-38" stroke="${K.goldD}" stroke-width="14" stroke-linecap="round"/>`
     : `<ellipse cx="17" cy="100" rx="9" ry="13" fill="${K.goldD}" transform="rotate(14 17 100)"/><ellipse cx="143" cy="100" rx="9" ry="13" fill="${K.goldD}" transform="rotate(-14 143 100)"/>`;
   return `
-  <ellipse cx="80" cy="137" rx="56" ry="7" fill="${K.oliveD}" opacity=".16"/>
+  ${shadow ? `<ellipse cx="80" cy="137" rx="56" ry="7" fill="${K.oliveD}" opacity=".16"/>` : ''}
   ${armsBack}
   <path d="M16 94C16 44 44 8 80 8s64 36 64 86c0 24-17 34-64 34S16 118 16 94z" fill="${K.gold}"/>
   <path d="M16 94c0 24 17 34 64 34s64-10 64-34c-9 15-31 22-64 22S25 109 16 94z" fill="${K.goldD}"/>
@@ -196,6 +197,81 @@ function readyFull(w = 390, h = 620) {
   return S(svg(w, h, inner), { w, h, n: 'Ilustrasi / Usahamu siap' });
 }
 
+
+// ---------- animated hero scenes ----------
+// Each moving part is its own layer (its own element), so the browser can move it on the
+// GPU. One big SVG with many animated children repaints every frame and looks choppy.
+const layer = (w, h, inner, abs, p = {}) => S(svg(w, h, inner), { w, h, abs, n: p.n || 'Layer', cls: p.cls, style: p.style });
+
+const ringRays = (cx, cy, r1, r2, n, col, wdt) => Array.from({ length: n }, (_, i) => {
+  const a = (Math.PI * 2 * i) / n;
+  return `<path d="M${(cx + Math.cos(a) * r1).toFixed(1)} ${(cy + Math.sin(a) * r1).toFixed(1)}L${(cx + Math.cos(a) * r2).toFixed(1)} ${(cy + Math.sin(a) * r2).toFixed(1)}" stroke="${col}" stroke-width="${wdt}" stroke-linecap="round"/>`;
+}).join('');
+
+// yellow sun: pale disc, brighter rays, turns slowly around its own centre
+function sunLayer(cx, cy, disk, n = 'Matahari') {
+  const r2 = disk + 30, size = (r2 + 8) * 2, m = size / 2;
+  const inner = `${ringRays(m, m, disk + 12, r2, 14, K.gold, 9)}<circle cx="${m}" cy="${m}" r="${disk}" fill="#FFE27A"/><circle cx="${m}" cy="${m}" r="${disk - 14}" fill="#FFEFA6" opacity=".7"/>`;
+  return layer(size, size, inner, { x: Math.round(cx - m), y: Math.round(cy - m) }, { n, cls: 'r-rays' });
+}
+const heroMascot = (x, y, scale) => {
+  const w = Math.round(160 * scale), h = Math.round(146 * scale);
+  return layer(w, h, rotiInner('joy', 'up', false, true), { x, y }, { n: 'Maskot', cls: 'r-hop' });
+};
+const heroShade = (cx, y, w = 150) => layer(w, 16, `<ellipse cx="${w / 2}" cy="8" rx="${w / 2 - 4}" ry="7" fill="${K.oliveD}"/>`, { x: Math.round(cx - w / 2), y }, { n: 'Bayangan', cls: 'r-shade' });
+const wheatLayer = (x, y, flip) => layer(76, 100, `${wheat(24, 92, 1.1, '#C98A0A')}${wheat(50, 98, .85, K.gold)}`, { x, y }, { n: 'Gandum', cls: 'r-sway', style: flip ? '--sw:-1;' : '' });
+const cloudLayer = (x, y, s, cls) => layer(Math.round(56 * s) + 8, Math.round(34 * s), cloud(14 * s + 4, 18 * s, s, '#fff'), { x, y }, { n: 'Awan', cls });
+const confetti = (list) => list.map(([x, y, c, sq], i) => layer(16, 16,
+  sq ? `<rect x="2" y="5.5" width="12" height="5" rx="2.5" fill="${c}" transform="rotate(${i * 41} 8 8)"/>` : `<circle cx="8" cy="8" r="4.5" fill="${c}"/>`,
+  { x, y }, { n: 'Konfeti', cls: 'r-conf', style: `--d:${(i * 0.37).toFixed(2)}s;` }));
+const fieldHills = (y0, h, ys, deep) => {
+  const W = 390, [a, b, c, d] = ys;
+  return layer(W, h, hill(W, a, 38, h, K.lime) + furrow(W, a + 36, 16, '#D6F09F') + hill(W, b, 34, h, K.sage) + furrow(W, b + 38, 14, '#CDEA9B') + hill(W, c, 30, h, K.olive) + furrow(W, c + 34, 12, '#73A833') + hill(W, d, 26, h, deep), { x: 0, y: y0 }, { n: 'Sawah' });
+};
+
+// Full-frame welcome: orange sunrise sky (the screen colour), yellow sun, hopping mascot.
+function welcomeArt() {
+  return F({ n: 'Ilustrasi / Welcome', w: 390, h: 844, abs: { x: 0, y: 0 } },
+    sunLayer(310, 380, 40),
+    cloudLayer(22, 300, 1, 'r-cloud'), cloudLayer(112, 352, .7, 'r-cloud r-cloud2'),
+    fieldHills(500, 344, [44, 96, 148, 196], K.oliveD),
+    wheatLayer(12, 468), wheatLayer(302, 468, true),
+    heroShade(195, 546), heroMascot(107, 398, 1.1));
+}
+// Full-frame finish: deep green field, yellow sun, hopping mascot, floating confetti.
+function readyArt() {
+  return F({ n: 'Ilustrasi / Usahamu siap', w: 390, h: 844, abs: { x: 0, y: 0 } },
+    sunLayer(195, 236, 62),
+    ...confetti([[44, 160, K.gold, 1], [336, 196, K.lime, 0], [66, 330, K.lime, 1], [322, 352, K.gold, 0], [132, 108, K.lime, 0], [262, 120, K.gold, 1], [34, 440, K.gold, 0], [342, 452, K.lime, 1]]),
+    fieldHills(496, 348, [60, 96, 132, 160], K.oliveD),
+    wheatLayer(14, 470), wheatLayer(300, 470, true),
+    heroShade(195, 524, 170), heroMascot(87, 366, 1.3));
+}
+
+// Buns for the plan panel: chocolate (dark) and cheese (light).
+function buns(w = 120, h = 72) {
+  const inner = `<ellipse cx="60" cy="66" rx="52" ry="5" fill="${K.ink}" opacity=".14"/>
+  <g><path d="M4 56C4 26 22 8 40 8s36 18 36 48c0 8-8 11-36 11S4 64 4 56z" fill="#8A5A32"/><path d="M4 56c0 8 8 11 36 11s36-3 36-11c-6 5-19 7-36 7S10 61 4 56z" fill="#5E3A1D"/><path d="M15 38c3-11 11-19 22-23-7 8-11 15-13 27z" fill="#B27B4B"/><path d="M24 24q10 8 19-2M38 36q11 5 21-3" stroke="#3B2312" stroke-width="4" stroke-linecap="round"/></g>
+  <g transform="translate(46 12) scale(.86)"><path d="M4 56C4 26 22 8 40 8s36 18 36 48c0 8-8 11-36 11S4 64 4 56z" fill="#FFF0C0"/><path d="M4 56c0 8 8 11 36 11s36-3 36-11c-6 5-19 7-36 7S10 61 4 56z" fill="#E6C25E"/><path d="M15 38c3-11 11-19 22-23-7 8-11 15-13 27z" fill="#FFFAE6"/><circle cx="30" cy="30" r="4" fill="#FF9A1F"/><circle cx="46" cy="22" r="4" fill="#FF9A1F"/><circle cx="52" cy="38" r="4" fill="#FF9A1F"/></g>`;
+  return S(svg(w, h, inner, '0 0 120 72'), { w, h, n: 'Ilustrasi / Roti cokelat dan keju' });
+}
+
+// Lesson video poster (flat): board with bars, teaching mascot. 342 x 192.
+function videoPoster(w = 342, h = 192) {
+  const inner = `<rect width="${w}" height="${h}" fill="${K.sage}"/>
+  <circle cx="316" cy="26" r="14" fill="#FFE27A"/>
+  ${hill(w, 150, 14, h, K.olive)}${hill(w, 172, 10, h, K.oliveD)}
+  <rect x="22" y="22" width="206" height="124" rx="12" fill="#C98A0A"/><rect x="30" y="30" width="190" height="108" rx="8" fill="${K.oliveD}"/>
+  <rect x="46" y="86" width="26" height="42" rx="4" fill="#fff" opacity=".92"/><path d="M88 107h14M95 100v14" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <rect x="112" y="108" width="26" height="20" rx="4" fill="${K.gold}"/><path d="M152 103h14M152 112h14" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <rect x="178" y="62" width="26" height="66" rx="4" fill="${K.lime}"/>
+  <path d="M46 50h50M46 62h30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+  <rect x="26" y="146" width="198" height="8" rx="4" fill="#C98A0A"/>
+  <g transform="translate(222 60) scale(.74)">${rotiInner('happy', 'down', false)}</g>
+  <ellipse cx="282" cy="166" rx="40" ry="5" fill="${K.oliveD}" opacity=".35"/>`;
+  return S(svg(w, h, inner), { w, h, n: 'Ilustrasi / Poster video' });
+}
+
 // books (academy)
 function books(w = 342, h = 150) {
   const inner = `<rect width="${w}" height="${h}" rx="24" fill="${K.sage}"/>
@@ -217,4 +293,4 @@ const coachRoti = (mood) => rotiN(60, mood, 'down', 'Maskot');
 // tail for speech bubble pointing left
 const tail = S(`<svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20" fill="none"><path d="M12 0v20L0 12.5Q-1 10 0 8z" fill="${C.white}"/></svg>`, { w: 12, h: 20, n: 'Ekor bubble' });
 
-module.exports = { readyFull, serviceBadge, roti, rotiN, coachRoti, welcome, envelope, serviceArt, stateScene, books, tail, rotiInner, svg, K };
+module.exports = { welcomeArt, readyArt, buns, videoPoster, readyFull, serviceBadge, roti, rotiN, coachRoti, welcome, envelope, serviceArt, stateScene, books, tail, rotiInner, svg, K };

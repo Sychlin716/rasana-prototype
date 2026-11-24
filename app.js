@@ -25,6 +25,10 @@
     'pos>posLoading': null,
   };
 
+  var score = 0;
+  var VIDEO_SECONDS = 192;   // 3:12
+  var VIDEO_SPEED = 16;      // the prototype has no real video file, so playback is accelerated
+  var video = { pct: 0, playing: false, raf: 0, last: 0, scr: null };
   var current = null;
   var stack = [];
   var timer = null;
@@ -110,6 +114,74 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2400);
   }
 
+  // ---------- lesson video (simulated playback) ----------
+  function clock(sec) {
+    sec = Math.round(sec);
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  }
+  function paintVideo() {
+    var scr = video.scr;
+    if (!scr) return;
+    var fill = scr.querySelector('.vp-fill');
+    var time = scr.querySelector('[data-id="vp-time"]');
+    if (fill) fill.style.width = (video.pct * 100).toFixed(2) + '%';
+    if (time) time.textContent = clock(video.pct * VIDEO_SECONDS) + ' / ' + clock(VIDEO_SECONDS);
+  }
+  function stopVideo() {
+    video.playing = false;
+    cancelAnimationFrame(video.raf);
+    if (video.scr) video.scr.classList.remove('is-play');
+  }
+  function finishVideo() {
+    stopVideo();
+    video.pct = 1;
+    paintVideo();
+    var scr = video.scr;
+    scr.classList.add('v-done');
+    var nx = scr.querySelector('.v-next');
+    if (nx) nx.removeAttribute('aria-disabled');
+    showToast('Video selesai. Lanjut ke kuis.');
+  }
+  function tickVideo(now) {
+    if (!video.playing) return;
+    var dt = Math.min(64, now - video.last);   // a long frame never makes the bar jump
+    video.last = now;
+    video.pct = Math.min(1, video.pct + (dt / 1000) * VIDEO_SPEED / VIDEO_SECONDS);
+    paintVideo();
+    if (video.pct >= 1) return finishVideo();
+    video.raf = requestAnimationFrame(tickVideo);
+  }
+  function togglePlay(scr) {
+    video.scr = scr;
+    if (video.pct >= 1) video.pct = 0;
+    if (video.playing) return stopVideo();
+    video.playing = true;
+    scr.classList.add('is-play');
+    video.last = performance.now();
+    video.raf = requestAnimationFrame(tickVideo);
+  }
+  function seek(scr, e) {
+    var track = e.target.closest('[data-act="seek"]');
+    var r = track.getBoundingClientRect();
+    video.scr = scr;
+    video.pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    paintVideo();
+    if (video.pct >= 1) finishVideo();
+  }
+
+  // ---------- quiz ----------
+  function answer(opt) {
+    var scr = opt.closest('.screen');
+    if (scr.classList.contains('q-done')) return;
+    var right = opt.dataset.ok === '1';
+    opt.dataset.state = right ? 'ok' : 'no';
+    scr.querySelectorAll('.qopt').forEach(function (o) { if (o.dataset.ok === '1') o.dataset.state = 'ok'; });
+    if (right) score++;
+    scr.classList.add('q-done', right ? 'q-ok' : 'q-no');
+    var nx = scr.querySelector('.q-next');
+    if (nx) nx.removeAttribute('aria-disabled');
+  }
+
   // ---------- routing ----------
   function render(key) {
     var el = document.createElement('div');
@@ -156,6 +228,14 @@
       outgoing.remove();
     }
 
+    if (key === 'kuis1') score = 0;
+    if (key === 'kuisHasil') {
+      var sc = incoming.querySelector('[data-id="quiz-score"]');
+      if (sc) sc.textContent = score + ' dari 3';
+    }
+    if (key === 'pelajaran') { stopVideo(); video.pct = 0; video.scr = incoming; }
+    else if (video.playing) stopVideo();
+
     current = key;
     document.title = 'Rasana · ' + byKey[key].name.replace(/^\d+\w*\s/, '');
     if (panelEl) {
@@ -198,8 +278,13 @@
     if (chip) { chipToggle(chip); return; }
     var act = e.target.closest('[data-act="step"]');
     if (act) { step(act); return; }
+    var scr = e.target.closest('.screen');
+    if (e.target.closest('[data-act="seek"]')) { seek(scr, e); return; }
+    if (e.target.closest('[data-act="play"]')) { togglePlay(scr); return; }
+    var opt = e.target.closest('[data-act="quiz"]');
+    if (opt) { answer(opt); return; }
     var link = e.target.closest('[data-go]');
-    if (!link) return;
+    if (!link || link.getAttribute('aria-disabled') === 'true') return;
     var to = link.dataset.go;
     var dir = TABS[to] && TABS[current] ? 'fade' : /Kembali|Batalkan/.test(link.getAttribute('aria-label') || '') ? 'pop' : 'push';
     navigate(to, dir, SAVED[current + '>' + to]);
@@ -209,7 +294,7 @@
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var t = e.target;
     if (!t.matches || t.isContentEditable) return;
-    if (t.matches('[data-chip]') || t.matches('[data-act="step"]')) { e.preventDefault(); t.click(); }
+    if (t.matches('[data-chip]') || t.matches('[data-act]')) { e.preventDefault(); t.click(); }
   });
 
   // OTP: one digit per box, focus moves forward

@@ -95,6 +95,9 @@ const ICONS = {
   coin: (c, a) => `<circle cx="12" cy="12" r="8.6" fill="${a}" stroke="${c}" stroke-width="2"/><path d="M9.2 12h5.6M9.2 9.4h5.6M9.2 14.6h5.6" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`,
   box: (c, a) => `<path d="m3.8 8 8.2-4 8.2 4v8.6L12 20.6l-8.2-4z" fill="${a}" stroke="${c}" stroke-width="2" stroke-linejoin="round"/><path d="m3.8 8 8.2 4 8.2-4M12 12v8.4" stroke="${c}" stroke-width="2" stroke-linejoin="round" fill="none"/>`,
   logout: (c, a) => `<path d="M9.5 4.5h-3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3" fill="${a}" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M10.5 12h9.5M16.4 8.4 20 12l-3.6 3.6" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  play: (c) => `<path d="M8.5 5.6v12.8a1 1 0 0 0 1.5.9l10.2-6.4a1 1 0 0 0 0-1.7L10 4.7a1 1 0 0 0-1.5.9z" fill="${c}"/>`,
+  pause: (c) => `<rect x="6" y="5" width="4.2" height="14" rx="1.6" fill="${c}"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.6" fill="${c}"/>`,
+  close: (c) => `<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`,
   swap: (c) => `<path d="M5 8.5h13l-3.2-3.2M19 15.5H6l3.2 3.2" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
   refresh: (c) => `<path d="M19.2 11a7.4 7.4 0 0 0-13.3-3.7L4.5 9M4.8 13a7.4 7.4 0 0 0 13.3 3.7l1.4-1.7M4.5 4.5V9h4.5M19.5 19.5V15H15" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
 };
@@ -118,24 +121,26 @@ const icon = (name, c = 'ink', size = 24, a) => {
 const Card = (p, ...c) => V({ bg: 'white', r: 20, pad: 16, gap: 12, w: 'fill', ...p }, ...c);
 const Panel = (bg, p, ...c) => V({ bg, r: 20, pad: 16, gap: 12, w: 'fill', ...p }, ...c);
 
-function Btn(text, { go, kind = 'primary', ic, disabled } = {}) {
+function Btn(text, { go, kind = 'primary', ic, disabled, cls, attrs } = {}) {
   const map = {
     primary: ['olive', 'white', 'oliveD'],
     accent: ['orange', 'ink', 'orangeD'],
     secondary: ['white', 'olive', null],
+    // white label needs a deeper orange to pass 4.5:1 (bright orange + white is only 2.9:1)
+    ember: ['orangeD', 'white', '#8F2E05'],
   };
   const [bg, fg, lip] = disabled ? ['sageL', 'ink3', null] : map[kind];
   return H(
     {
       n: 'Button / ' + text, w: 'fill', h: 56, bg, r: 16, ax: 'center', jx: 'center', gap: 8,
-      go: disabled ? null : go, role: 'button', comp: 'Button/' + kind,
+      go: disabled ? null : go, role: 'button', comp: 'Button/' + kind, cls, attrs,
       stroke: kind === 'secondary' ? { c: 'olive', w: 2 } : lip ? { c: lip, w: 4, sides: 'b' } : null,
     },
     ic ? icon(ic, fg, 20, 'none') : null,
     txt(text, 16, 'disp', fg, { lh: 22, slot: 'label' }),
   );
 }
-const LinkBtn = (s, go) => H({ n: 'Link / ' + s, w: 'fill', h: 44, ax: 'center', jx: 'center', go, role: 'button' }, txt(s, 14, 'bodyB', 'olive', { lh: 20 }));
+const LinkBtn = (s, go, color = 'olive') => H({ n: 'Link / ' + s, w: 'fill', h: 44, ax: 'center', jx: 'center', go, role: 'button' }, txt(s, 14, 'bodyB', color, { lh: 20 }));
 
 function Field(lab, value, { ic, state = 'idle', ph, helper, go } = {}) {
   const isErr = state === 'error', isFocus = state === 'focus';
@@ -227,16 +232,19 @@ function NavBar(active) {
 // Screen scaffold: 390 x 844. Side gutter is always GUTTER. Content gap is always 24
 // between groups; tighter rhythm lives inside the components.
 function Screen(key, name, o = {}) {
-  const { bg = 'bg', body: bodyNodes = [], footer = null, nav = null, gap = 24, status = 'ink', homeFg, section: sec = 'Lainnya', note, after, pad } = o;
+  const { bg = 'bg', body: bodyNodes = [], footer = null, nav = null, gap = 24, status = 'ink', homeFg, section: sec = 'Lainnya', note, after, pad, art = null, footerBg = null } = o;
+  // With a full-bleed `art` layer behind, every in-flow block is lifted above it.
+  const up = (n) => (art && n ? { ...n, lift: true } : n);
   return {
     key, name, section: sec, note,
     root: V(
       { n: name, w: 390, h: 844, bg, r: 36, clip: true, after },
-      StatusBar(status),
-      V({ n: 'Content', w: 'fill', h: 'fill', pad: pad === undefined ? [16, GUTTER, 0, GUTTER] : pad, gap }, ...flat([bodyNodes])),
-      footer ? V({ n: 'Actions', w: 'fill', pad: [16, GUTTER, 8, GUTTER], gap: 4 }, ...flat([footer])) : null,
-      nav || null,
-      HomeBar(homeFg || (status === 'white' ? 'white' : 'ink')),
+      art,
+      up(StatusBar(status)),
+      up(V({ n: 'Content', w: 'fill', h: 'fill', pad: pad === undefined ? [16, GUTTER, 0, GUTTER] : pad, gap }, ...flat([bodyNodes]))),
+      footer ? up(V({ n: 'Actions', w: 'fill', pad: [16, GUTTER, 8, GUTTER], gap: 4, bg: footerBg }, ...flat([footer]))) : null,
+      up(nav || null),
+      up(HomeBar(homeFg || (status === 'white' ? 'white' : 'ink'))),
     ),
   };
 }

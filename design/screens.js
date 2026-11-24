@@ -41,15 +41,14 @@ const add = (s) => out.push(s);
 const SEC1 = 'Masuk dan daftar';
 
 add(Screen('welcome', '01 Welcome', {
-  section: SEC1, pad: 0, gap: 24,
+  section: SEC1, bg: 'orange', homeFg: 'white', art: A.welcomeArt(), footerBg: 'oliveD',
   body: [
-    V({ w: 'fill', pad: [16, GUTTER, 0, GUTTER] }, LOGO(112)),
-    A.welcome(390, 300),
-    V({ w: 'fill', pad: [0, GUTTER], gap: 8 },
+    H({ n: 'Logo', bg: 'white', r: 12, pad: [8, 12] }, LOGO(100)),
+    V({ w: 'fill', gap: 8 },
       display('Produksi pas,\nsisa berkurang.'),
-      body('Rasana menghitungnya dari data penjualan usahamu.')),
+      body('Rasana menghitungnya dari data penjualan usahamu.', { color: 'ink' })),
   ],
-  footer: [Btn('Buat akun usaha', { go: 'daftar' }), LinkBtn('Saya sudah punya akun', 'login')],
+  footer: [Btn('Buat akun usaha', { go: 'daftar', kind: 'accent' }), LinkBtn('Saya sudah punya akun', 'login', 'white')],
 }));
 
 add(Screen('daftar', '02 Daftar', {
@@ -268,36 +267,46 @@ add(Screen('saving', '15 Menyimpan (loading)', {
 }));
 
 add(Screen('ready', '16 Usahamu siap', {
-  section: SEC3, bg: 'oliveD', status: 'white', homeFg: 'white', pad: 0, gap: 0,
-  body: [
-    A.readyFull(390, 620),
-    V({ w: 'fill', h: 'fill', pad: [24, GUTTER, 0, GUTTER], jx: 'start' },
-      txt('Usahamu sudah siap', 28, 'disp', 'white', { lh: 36, w: 'fill', ls: -0.5 })),
-  ],
-  footer: [Btn('Buka beranda', { go: 'home', kind: 'accent' })],
+  section: SEC3, bg: 'oliveD', status: 'white', homeFg: 'white', art: A.readyArt(), gap: 0,
+  body: [V({ w: 'fill', h: 'fill', jx: 'end', ax: 'center', pad: [0, 0, 24, 0] },
+    txt('Usahamu sudah siap', 28, 'disp', 'white', { lh: 36, w: 'fill', ls: -0.5, align: 'center' }))],
+  footer: [Btn('Buka beranda', { go: 'home', kind: 'ember' })],
 }));
 
 // ========================= 4. BERANDA =========================
 const SEC4 = 'Beranda dan kondisi';
-const HomeHead = () => H({ n: 'Header beranda', w: 'fill', h: 44, ax: 'center', jx: 'between' }, LOGO(120), H({ n: 'Buka akun', go: 'akun', role: 'button', w: 44, h: 44, ax: 'center', jx: 'center' }, Avatar('TR')));
-const Greet = () => V({ w: 'fill', gap: 4 }, title('Halo, Rina'), small('Toko Roti Rina · Bogor'));
+// Greeting and account in one row: the logo lives on welcome and Akun, so Beranda
+// spends its height on the numbers.
+const HomeHead = () => H({ n: 'Header beranda', w: 'fill', ax: 'center', jx: 'between', gap: 12 },
+  V({ w: 'fill', gap: 4 }, title('Halo, Rina'), small('Toko Roti Rina · Bogor')),
+  H({ n: 'Buka akun', go: 'akun', role: 'button', w: 44, h: 44, ax: 'center', jx: 'center' }, Avatar('TR')));
 
-// Focal point of the whole app: tomorrow's production number. The whole panel opens TAKAR,
-// so it needs no button of its own and stays one compact block.
-const TomorrowPanel = () => V({ n: 'Rencana besok', w: 'fill', bg: 'gold', r: 20, pad: 16, gap: 8, go: 'takar', role: 'button' },
+// Focal point of the whole app: tomorrow's production number. One component, two sizes:
+// compact on Beranda (the whole panel opens TAKAR), detailed on TAKAR (ratio bar + legend).
+const Legend = () => H({ gap: 16, ax: 'center' },
+  H({ gap: 8, ax: 'center' }, Dot('ink'), txt('30 cokelat', 12, 'bodyB', 'ink', { lh: 16 })),
+  H({ gap: 8, ax: 'center' }, Dot('white'), txt('20 keju', 12, 'bodyB', 'ink', { lh: 16 })));
+const RatioBar = () => H({ n: 'Rasio cokelat dan keju', w: 'fill', h: 12, gap: 4 }, F({ w: 186, h: 12, r: 8, bg: 'ink' }), F({ w: 120, h: 12, r: 8, bg: 'white' }));
+const PlanPanel = (detail) => V({ n: 'Rencana besok', w: 'fill', bg: 'gold', r: 20, pad: 16, gap: 12, go: detail ? null : 'takar', role: detail ? undefined : 'button' },
   H({ w: 'fill', jx: 'between', ax: 'center' }, txt('Besok, Rabu 25 November', 12, 'bodyB', 'ink', { lh: 16 }), Tag('Data contoh', 'white')),
-  num('Siapkan 50 roti', 28, { w: 'fill' }),
-  H({ w: 'fill', ax: 'center', gap: 8 },
-    txt('30 cokelat, 20 keju', 14, 'bodyM', 'ink', { lh: 20, w: 'fill' }),
-    txt('Lihat rencana', 14, 'bodyB', 'ink', { lh: 20 }), icon('right', 'ink', 20)));
+  H({ w: 'fill', ax: 'center', jx: 'between' },
+    V({ gap: 4 }, txt('Siapkan', 14, 'bodyM', 'ink', { lh: 20 }), num('50 roti', 28)),
+    detail ? A.buns(120, 72) : A.buns(96, 58)),
+  detail
+    ? V({ w: 'fill', gap: 8 }, RatioBar(), Legend())
+    : H({ w: 'fill', ax: 'center', jx: 'between' }, Legend(), H({ gap: 4, ax: 'center' }, txt('Lihat rencana', 14, 'bodyB', 'ink', { lh: 20 }), icon('right', 'ink', 20))));
+const TomorrowPanel = () => PlanPanel(false);
 
-const Stat = (lab, val, w = 'fill') => V({ w, gap: 4 }, txt(lab, 12, 'bodyM', 'cream', { lh: 16 }), num(val, 20, { color: 'white' }));
+// Three equal-height columns split by hairlines, so label and value always line up.
+const Stat = (lab, val, w, first) => V({ w, gap: 4, pad: [0, first ? 12 : 0, 0, first ? 0 : 12] },
+  txt(lab, 12, 'bodyM', 'cream', { lh: 16 }), num(val, 20, { color: 'white' }));
+const VDiv = () => F({ w: 1.5, h: 46, bg: 'oliveD' });
 const TodayPanel = () => Panel('olive', { gap: 16 },
   H({ w: 'fill', jx: 'between', ax: 'center' }, txt('Hari ini', 14, 'bodyB', 'white', { lh: 20 }), Tag('Data contoh', 'oliveD', 'white')),
-  H({ w: 'fill', gap: 8 }, Stat('Penjualan', 'Rp 354rb', 132), Stat('Terjual', '42 pcs'), Stat('Sisa', '6 pcs')));
+  H({ n: 'Ringkasan hari ini', w: 'fill', ax: 'center' }, Stat('Penjualan', 'Rp 354rb', 'fill', true), VDiv(), Stat('Terjual', '42 pcs', 96), VDiv(), Stat('Sisa', '6 pcs', 96)));
 
 const ServiceCard = (kind, name, desc, go) => V({ n: 'Layanan / ' + name, w: 'fill', bg: 'white', r: 20, clip: true, go, role: 'button' },
-  A.serviceArt(kind, 165, 76),
+  A.serviceArt(kind, 165, 64),
   V({ w: 'fill', pad: 12, gap: 4 }, rowTitle(name), caption(desc, { w: 'fill' })));
 
 const ChecklistRow = () => H({ n: 'Lengkapi usaha', w: 'fill', pad: 16, gap: 12, bg: 'oliveL', r: 16, ax: 'center', go: 'lengkapi', role: 'button' },
@@ -306,7 +315,7 @@ const ChecklistRow = () => H({ n: 'Lengkapi usaha', w: 'fill', pad: 16, gap: 12,
 
 add(Screen('home', '17 Beranda', {
   section: SEC4, nav: NavBar('Beranda'),
-  body: [V({ w: 'fill', gap: 16 }, HomeHead(), Greet()), TomorrowPanel(), TodayPanel(),
+  body: [HomeHead(), TomorrowPanel(), TodayPanel(),
     V({ w: 'fill', gap: 12 },
       H({ w: 'fill', gap: 12 }, ServiceCard('timbang', 'TIMBANG', 'HPP dan laba', 'timbang'), ServiceCard('tumbuh', 'TUMBUH', 'Rasana Academy', 'tumbuh')),
       ChecklistRow())],
@@ -314,7 +323,7 @@ add(Screen('home', '17 Beranda', {
 
 add(Screen('homeEmpty', '17b Beranda, belum ada data (empty)', {
   section: SEC4, nav: NavBar('Beranda'), note: 'State empty',
-  body: [V({ w: 'fill', gap: 16 }, HomeHead(), Greet()),
+  body: [HomeHead(),
     Card({ gap: 16, ax: 'center', pad: 16 },
       A.stateScene('empty', 310, 170),
       V({ w: 'fill', gap: 8, ax: 'center' }, section('Belum ada data penjualan', { align: 'center', w: 'fill' }),
@@ -327,7 +336,7 @@ add(Screen('homeEmpty', '17b Beranda, belum ada data (empty)', {
 
 add(Screen('homeLoading', '17c Beranda, memuat (loading)', {
   section: SEC4, nav: NavBar('Beranda'), note: 'State loading', gap: 16,
-  body: [V({ w: 'fill', gap: 16 }, HomeHead(), Greet()),
+  body: [HomeHead(),
     F({ w: 'fill', h: 196, bg: 'cream', r: 20 }),
     F({ w: 'fill', h: 104, bg: 'cream', r: 20 }),
     H({ w: 'fill', gap: 12 }, F({ w: 'fill', h: 160, bg: 'cream', r: 20 }), F({ w: 'fill', h: 160, bg: 'cream', r: 20 })),
@@ -336,7 +345,7 @@ add(Screen('homeLoading', '17c Beranda, memuat (loading)', {
 
 add(Screen('homeError', '17d Beranda, gagal memuat (error)', {
   section: SEC4, nav: NavBar('Beranda'), note: 'State error',
-  body: [V({ w: 'fill', gap: 16 }, HomeHead(), Greet()),
+  body: [HomeHead(),
     Card({ gap: 16, ax: 'center', pad: 16 },
       A.stateScene('error', 310, 200),
       V({ w: 'fill', gap: 8, ax: 'center' }, section('Data belum bisa dimuat', { align: 'center', w: 'fill' }),
@@ -390,12 +399,9 @@ const TakarSeg = (a) => Seg([['Rencana', 'takar'], ['Evaluasi', 'evaluasi']], a)
 add(Screen('takar', '20 TAKAR Rencana', {
   section: SEC5, nav: NavBar('Takar'), gap: 16,
   body: [ServiceHead('TAKAR', 'Rencana dan evaluasi produksi', 'takar'), TakarSeg('Rencana'),
-    V({ n: 'Rekomendasi besok', w: 'fill', bg: 'gold', r: 20, pad: 16, gap: 8 },
-      H({ w: 'fill', jx: 'between', ax: 'center' }, txt('Besok, Rabu 25 November', 12, 'bodyB', 'ink', { lh: 16 }), Tag('Data contoh', 'white')),
-      num('Siapkan 50 roti', 28, { w: 'fill' }),
-      txt('30 roti cokelat dan 20 roti keju, dihitung dari penjualan beberapa minggu terakhir.', 14, 'bodyM', 'ink', { lh: 20, w: 'fill' })),
+    PlanPanel(true),
     ListGroup(
-      Row('Perkiraan permintaan', 'Sedikit di atas rata-rata', { ic: 'chart', tone: 'goldL', iconColor: 'goldD', bare: true }),
+      Row('Perkiraan permintaan', 'Dari penjualan beberapa minggu, sedikit di atas rata-rata', { ic: 'chart', tone: 'goldL', iconColor: 'goldD', bare: true }),
       Row('Bahan belum cukup', 'Cokelat kurang 0,3 kg', { ic: 'warn', tone: 'orangeL', iconColor: 'orangeD', tag: Tag('Beli dulu', 'orangeL'), bare: true }),
       Row('Mulai produksi 05.00', 'Agar siap sebelum buka', { ic: 'clock', tone: 'sageL', iconColor: 'sageD', bare: true })),
   ],
@@ -532,7 +538,7 @@ const lesson = (n, t, state, go) => H({ w: 'fill', pad: 16, gap: 12, bg: 'white'
 
 add(Screen('modul', '26 Modul', {
   section: SEC7,
-  body: [TopBar('tumbuh'), TitleBlock('Mengurangi sisa roti', '4 pelajaran · sekitar 12 menit'),
+  body: [TopBar('tumbuh'), TitleBlock('Mengurangi sisa roti', '4 pelajaran, tiap pelajaran video dan kuis'),
     V({ w: 'fill', gap: 12 },
       lesson(1, 'Kenali pola sisa harian', 'done'),
       lesson(2, 'Hitung jumlah yang sebaiknya dibuat', 'now', 'pelajaran'),
@@ -541,15 +547,74 @@ add(Screen('modul', '26 Modul', {
   footer: [Btn('Lanjut pelajaran 2', { go: 'pelajaran' })],
 }));
 
-add(Screen('pelajaran', '27 Pelajaran', {
+// ---- lesson = watch a video, then take a short quiz ----
+const VIDEO_LEN = '3:12';
+const Chapter = (t, time, on) => H({ w: 'fill', gap: 12, ax: 'center', pad: [12, 0] },
+  H({ w: 40, h: 24, r: 8, bg: on ? 'gold' : 'cream', ax: 'center', jx: 'center' }, txt(time, 12, 'bodyB', 'ink', { lh: 16 })),
+  txt(t, 14, on ? 'bodyB' : 'bodyM', 'ink', { lh: 20, w: 'fill' }));
+
+const Player = () => V({ n: 'Pemutar video', w: 'fill', gap: 12 },
+  H({ n: 'Layar video', w: 'fill', r: 20, clip: true, rel: true, act: 1, cls: 'vp-screen', attrs: { 'data-act': 'play', 'aria-label': 'Putar video' } },
+    A.videoPoster(342, 192),
+    H({ n: 'Tombol putar', w: 64, h: 64, r: 999, bg: 'white', ax: 'center', jx: 'center', abs: { x: 139, y: 64 }, cls: 'vp-big' }, icon('play', 'olive', 28, 'none'))),
+  H({ n: 'Kontrol', w: 'fill', gap: 12, ax: 'center' },
+    H({ n: 'Putar atau jeda', w: 44, h: 44, r: 12, bg: 'oliveL', ax: 'center', jx: 'center', act: 1, attrs: { 'data-act': 'play', 'aria-label': 'Putar atau jeda' } },
+      { ...icon('play', 'olive', 20, 'none'), cls: 'vp-i-play' }, { ...icon('pause', 'olive', 20, 'none'), cls: 'vp-i-pause' }),
+    H({ n: 'Garis waktu', w: 'fill', h: 44, ax: 'center', act: 1, attrs: { 'data-act': 'seek', 'aria-label': 'Geser posisi video' } },
+      H({ w: 'fill', h: 8, r: 8, bg: 'line', clip: true }, F({ w: 0, h: 8, r: 8, bg: 'olive', cls: 'vp-fill' }))),
+    txt('0:00 / ' + VIDEO_LEN, 12, 'bodyM', 'ink2', { lh: 16, attrs: { 'data-id': 'vp-time' } })));
+
+add(Screen('pelajaran', '27 Pelajaran, video', {
   section: SEC7, gap: 16,
   body: [TopBar('modul'),
-    V({ w: 'fill', gap: 8 }, txt('Pelajaran 2 dari 4', 12, 'bodyB', 'olive', { lh: 16 }), title('Hitung jumlah yang sebaiknya dibuat')),
-    body('Mulai dari rata-rata terjual per hari, lalu tambah sedikit penyangga untuk hari ramai. Jangan menambah terlalu banyak, karena roti yang sisa adalah modal yang tidak kembali.'),
-    V({ w: 'fill', pad: 16, gap: 8, bg: 'goldL', r: 16 }, txt('Contoh', 12, 'bodyB', 'ink', { lh: 16 }),
-      txt('Rata-rata terjual 24 roti. Buat 28 roti. Penyangga 4 roti cukup untuk hari ramai tanpa banyak sisa.', 14, 'bodyM', 'ink', { lh: 20, w: 'fill' })),
-    H({ w: 'fill', gap: 12, pad: 16, bg: 'white', r: 16, ax: 'center' }, icon('takar', 'olive', 24), caption('TAKAR menghitung ini otomatis dari data penjualanmu.', { w: 'fill' }))],
-  footer: [Btn('Selesai, lanjut pelajaran 3', { go: 'modul' })],
+    V({ w: 'fill', gap: 8 }, txt('Pelajaran 2 dari 4 · Video ' + VIDEO_LEN, 12, 'bodyB', 'olive', { lh: 16 }), title('Hitung jumlah yang sebaiknya dibuat')),
+    Player(),
+    V({ n: 'Isi video', w: 'fill', gap: 0 },
+      Chapter('Rata-rata terjual per hari', '0:00', true),
+      F({ w: 'fill', h: 1.5, bg: 'line' }),
+      Chapter('Menambah penyangga hari ramai', '1:10'),
+      F({ w: 'fill', h: 1.5, bg: 'line' }),
+      Chapter('Contoh hitungan: 24 jadi 28 roti', '2:20'))],
+  footer: [Btn('Mulai kuis, 3 soal', { go: 'kuis1', cls: 'v-next', attrs: { 'aria-disabled': 'true' } }), LinkBtn('Lewati video', 'kuis1')],
+}));
+
+const QUIZ = [
+  { q: 'Rata-rata terjual 30 roti per hari, dan hari ramai biasanya naik sedikit. Berapa roti yang sebaiknya dibuat?',
+    o: ['30 roti, sama dengan rata-rata', '35 roti, rata-rata ditambah penyangga', '60 roti, dua kali lipat biar aman'], ok: 1,
+    why: 'Penyangga kecil menutup hari ramai. Dua kali lipat membuat banyak roti sisa.' },
+  { q: 'Apa fungsi penyangga dalam rencana produksi?',
+    o: ['Menggantikan data penjualan', 'Menutup hari ramai tanpa banyak sisa', 'Menaikkan harga jual'], ok: 1,
+    why: 'Penyangga hanya tambahan kecil di atas rata-rata, bukan pengganti data.' },
+  { q: 'Roti yang sisa di akhir hari berarti apa bagi usahamu?',
+    o: ['Keuntungan tambahan', 'Tanda produksi kurang', 'Modal yang tidak kembali'], ok: 2,
+    why: 'Bahan, tenaga, dan listrik sudah terpakai. Karena itu sisa perlu ditekan.' },
+];
+const Opt = (letter, text, ok) => H({ n: 'Opsi ' + letter, w: 'fill', pad: 16, gap: 12, bg: 'white', r: 16, ax: 'center', stroke: { c: 'lineD', w: 1.5 }, act: 1, cls: 'qopt', attrs: { 'data-act': 'quiz', 'data-ok': ok ? '1' : '0' } },
+  H({ w: 32, h: 32, r: 999, bg: 'cream', ax: 'center', jx: 'center' }, txt(letter, 14, 'disp', 'ink', { lh: 20 })),
+  txt(text, 14, 'bodyB', 'ink', { lh: 20, w: 'fill' }),
+  { ...icon('check', 'olive', 24), cls: 'qi qi-ok' }, { ...icon('close', 'err', 24), cls: 'qi qi-no' });
+QUIZ.forEach((it, i) => {
+  const n = i + 1, last = n === QUIZ.length;
+  add(Screen('kuis' + n, '27' + 'bcd'[i] + ' Kuis soal ' + n, {
+    section: SEC7, gap: 16,
+    body: [TopBar('pelajaran'),
+      V({ w: 'fill', gap: 8 }, txt('Soal ' + n + ' dari ' + QUIZ.length, 12, 'bodyB', 'olive', { lh: 16 }), Meter(n, QUIZ.length), title(it.q, { size: 20 })),
+      V({ w: 'fill', gap: 12 }, ...it.o.map((t, k) => Opt('ABC'[k], t, k === it.ok))),
+      H({ n: 'Benar', w: 'fill', pad: 16, gap: 12, bg: 'sageL', r: 16, cls: 'qfb qfb-ok' }, icon('check', 'olive', 24),
+        V({ w: 'fill', gap: 4 }, txt('Benar', 14, 'bodyB', 'ink', { lh: 20 }), txt(it.why, 12, 'bodyM', 'ink', { lh: 16, w: 'fill' }))),
+      H({ n: 'Belum tepat', w: 'fill', pad: 16, gap: 12, bg: 'errL', r: 16, cls: 'qfb qfb-no' }, icon('warn', 'err', 24),
+        V({ w: 'fill', gap: 4 }, txt('Belum tepat. Jawaban benar: ' + 'ABC'[it.ok], 14, 'bodyB', 'ink', { lh: 20 }), txt(it.why, 12, 'bodyM', 'ink', { lh: 16, w: 'fill' })))],
+    footer: [Btn(last ? 'Lihat hasil' : 'Soal berikutnya', { go: last ? 'kuisHasil' : 'kuis' + (n + 1), cls: 'q-next', attrs: { 'aria-disabled': 'true' } })],
+  }));
+});
+
+add(Screen('kuisHasil', '27e Hasil kuis', {
+  section: SEC7, gap: 24,
+  body: [V({ w: 'fill', h: 'fill', gap: 24, ax: 'center', jx: 'center' },
+    A.rotiN(144, 'joy', 'up'),
+    V({ w: 'fill', gap: 8, ax: 'center' }, title('Pelajaran 2 selesai', { align: 'center' }), body('Skor kuismu', { align: 'center' })),
+    V({ n: 'Skor', w: 'fill', bg: 'gold', r: 20, pad: 16, ax: 'center' }, num('3 dari 3', 28, { align: 'center', w: 'fill', attrs: { 'data-id': 'quiz-score' } })))],
+  footer: [Btn('Lanjut pelajaran 3', { go: 'modul' }), LinkBtn('Ulangi kuis', 'kuis1')],
 }));
 
 // ========================= 8. AKUN =========================

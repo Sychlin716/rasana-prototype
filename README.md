@@ -1,7 +1,7 @@
 # Rasana · prototipe aplikasi
 
 Prototipe antarmuka Rasana, asisten operasional untuk usaha roti skala mikro dan kecil.
-39 layar, bisa diklik, dengan transisi dan interaksi yang berjalan sungguhan.
+43 layar, bisa diklik, dengan transisi dan interaksi yang berjalan sungguhan.
 
 Situs statis tanpa dependensi, tanpa proses build. Buka `index.html` dan jalan.
 
@@ -41,13 +41,15 @@ prototipe. Untuk pembaruan otomatis tiap kali ada perubahan, pakai cara GitHub d
 | `app.css` | Bingkai, transisi, animasi, state interaksi |
 | `fonts.css` | Poppins dan DM Sans tertanam sebagai data URI |
 | `app.js` | Router hash, transisi layar, chip, stepper, input, toast |
-| `screens.js` | 39 layar hasil render dari sistem desain (dihasilkan otomatis) |
+| `screens.js` | 43 layar hasil render dari sistem desain (dihasilkan otomatis) |
 | `assets/` | Logo dan ikon aplikasi |
 | `manifest.webmanifest` | Metadata PWA, bisa dipasang ke layar utama HP |
 
 `screens.js` dihasilkan dari sumber desain, jadi jangan disunting manual.
 
 ## Cara memakai
+
+- TUMBUH: pelajaran berisi video lalu kuis 3 soal. Videonya masih simulasi (belum ada berkas video asli) dan diputar dipercepat 16 kali supaya mudah dicoba.
 
 - Klik elemen di layar: tombol, kartu, tab, chip, stepper, kolom isian.
 - Tab dan Enter berfungsi, Escape untuk kembali.

@@ -43,7 +43,7 @@ function render(n, parentDir, ctx) {
     return `<div class="t${n.cls ? ' ' + n.cls : ''}" style="${st}"${attrStr(n.attrs)}${ed}>${n.ph && n.edit ? '' : esc(n.s)}</div>`;
   }
   if (n.k === 's') {
-    const st = `width:${n.w}px;height:${n.h}px;flex:none;${n.hide ? 'display:none;' : 'display:block;'}${n.abs ? `position:absolute;left:${n.abs.x}px;top:${n.abs.y}px;` : ''}`;
+    const st = `width:${n.w}px;height:${n.h}px;flex:none;${n.hide ? 'display:none;' : 'display:block;'}${n.abs ? `position:absolute;left:${n.abs.x}px;top:${n.abs.y}px;` : ''}${n.style || ''}`;
     return `<div class="s${n.cls ? ' ' + n.cls : ''}" style="${st}" aria-hidden="true">${n.svg}</div>`;
   }
   if (n.k === 'i') {
@@ -67,10 +67,12 @@ function render(n, parentDir, ctx) {
     else st += 'box-shadow:' + sd.split('').map((x) => ({ b: `inset 0 -${w}px 0 0 ${c}`, t: `inset 0 ${w}px 0 0 ${c}`, l: `inset ${w}px 0 0 0 ${c}`, r: `inset -${w}px 0 0 0 ${c}` }[x])).join(',') + ';';
   }
   if (n.abs) st += `position:absolute;left:${n.abs.x}px;top:${n.abs.y}px;`;
+  if (n.rel) st += 'position:relative;';
+  if (n.lift) st += 'position:relative;z-index:1;';
   st += sizeCss(n, parentDir);
   let attrs = '';
   const tag = n.go || n.chip || n.act ? 'button' : 'div';
-  if (tag === 'button') { st = 'border:0;margin:0;background:transparent;text-align:left;font:inherit;color:inherit;' + st; attrs += ' type="button"'; }
+  if (tag === 'button') { st = 'border:0;margin:0;padding:0;background:transparent;text-align:left;font:inherit;color:inherit;' + st; attrs += ' type="button"'; }
   if (n.go) {
     attrs += ` data-go="${n.go}" aria-label="${esc((n.n || '').replace(/^(Button|Link|Row|Tab|Seg|Layanan|Chip) ?[\/·] ?/, ''))}"`;
     goCount++;
