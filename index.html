@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rasana · prototipe aplikasi</title>
+<meta name="description" content="Prototipe aplikasi Rasana, asisten operasional untuk usaha roti skala kecil.">
+<meta name="theme-color" content="#FFFCF5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<h1 class="sr-only">Rasana, prototipe aplikasi untuk usaha roti</h1>
+<main class="stage">
+  <div class="device-wrap">
+    <div class="device">
+      <div class="screens" id="screens" role="region" aria-label="Layar aplikasi" aria-live="polite"></div>
+      <div class="toast" id="toast" role="status">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.6l4.6 4.6L19 7.6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="toast-text"></span>
+      </div>
+    </div>
+  </div>
+  <nav class="panel" id="panel" aria-label="Daftar layar"></nav>
+</main>
+<script src="screens.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
