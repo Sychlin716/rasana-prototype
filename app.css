@@ -185,3 +185,11 @@ img, svg { display: block; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+/* ---------- scrolling screens + editable recipe ---------- */
+.scroll { overflow-y: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+.scroll::-webkit-scrollbar { display: none }
+.ing-off { display: none !important }
+.ing-full [data-act="addIng"] { display: none !important }
+.ing { animation: rise 320ms var(--ease) both }
+.ing [contenteditable][aria-label="Nama bahan"] { color: #16240D !important }

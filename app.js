@@ -51,6 +51,23 @@
     var q = function (id) { return root.querySelector('[data-id="' + id + '"]'); };
     var val = function (sel) { var e = root.querySelector(sel); return e ? +e.dataset.num : null; };
 
+    var rows = root.querySelectorAll('[data-ing]');
+    if (rows.length) {
+      var sum = 0;
+      rows.forEach(function (r) {
+        if (r.classList.contains('ing-off')) return;
+        var qty = +r.querySelector('[data-stepper] [data-val]').dataset.num;
+        var price = +(r.querySelector('[data-price]').textContent.replace(/\D/g, '') || 0);
+        var sub = Math.round(qty / 1000 * price);
+        sum += sub;
+        r.querySelector('[data-sub]').textContent = rupiah(sub);
+      });
+      var yld = +(root.querySelector('[data-yield]').textContent.replace(/\D/g, '') || 0);
+      q('rs-total').textContent = rupiah(sum);
+      q('rs-unit').textContent = yld > 0 ? rupiah(sum / yld) : '-';
+      if (changed) { bump(q('rs-total')); bump(q('rs-unit')); }
+    }
+
     if (q('man-total')) {
       var t = q('man-total');
       t.textContent = rupiah(val('[data-stepper="man"] [data-val]') * 8000);
@@ -169,6 +186,31 @@
     if (video.pct >= 1) finishVideo();
   }
 
+  // ---------- recipe: add and remove ingredients ----------
+  function syncIngFull(scr) {
+    scr.classList.toggle('ing-full', !scr.querySelector('.ing-off[data-spare]'));
+  }
+  function removeIng(btn) {
+    var row = btn.closest('[data-ing]'), scr = btn.closest('.screen');
+    row.classList.add('ing-off');
+    if (row.hasAttribute('data-spare')) {      // spare rows go back to blank
+      row.querySelector('[contenteditable][aria-label="Nama bahan"]').textContent = '';
+      row.querySelector('[data-price]').textContent = '0';
+      var v = row.querySelector('[data-val]'); v.dataset.num = 100; v.textContent = '100';
+    }
+    syncIngFull(scr); recalc(scr, true);
+  }
+  function addIng(btn) {
+    var scr = btn.closest('.screen');
+    var row = scr.querySelector('.ing-off[data-spare]');
+    if (!row) return;
+    row.classList.remove('ing-off');
+    syncIngFull(scr); recalc(scr, true);
+    var name = row.querySelector('[contenteditable]');
+    row.scrollIntoView({ block: 'nearest', behavior: reduce.matches ? 'auto' : 'smooth' });
+    name.focus({ preventScroll: true });
+  }
+
   // ---------- quiz ----------
   function answer(opt) {
     var scr = opt.closest('.screen');
@@ -229,6 +271,7 @@
     }
 
     if (key === 'kuis1') score = 0;
+    if (key === 'resep') syncIngFull(incoming);
     if (key === 'kuisHasil') {
       var sc = incoming.querySelector('[data-id="quiz-score"]');
       if (sc) sc.textContent = score + ' dari 3';
@@ -281,6 +324,10 @@
     var scr = e.target.closest('.screen');
     if (e.target.closest('[data-act="seek"]')) { seek(scr, e); return; }
     if (e.target.closest('[data-act="play"]')) { togglePlay(scr); return; }
+    var rm = e.target.closest('[data-act="rm"]');
+    if (rm) { removeIng(rm); return; }
+    var ad = e.target.closest('[data-act="addIng"]');
+    if (ad) { addIng(ad); return; }
     var opt = e.target.closest('[data-act="quiz"]');
     if (opt) { answer(opt); return; }
     var link = e.target.closest('[data-go]');
@@ -299,6 +346,8 @@
 
   // OTP: one digit per box, focus moves forward
   screensEl.addEventListener('input', function (e) {
+    var num = e.target.closest && e.target.closest('[data-price],[data-yield]');
+    if (num) { recalc(num.closest('.screen'), true); return; }
     var box = e.target.closest && e.target.closest('[data-otp]');
     if (!box) return;
     var ch = (box.textContent || '').replace(/\D/g, '').slice(-1);
@@ -306,6 +355,14 @@
       ? '<div class="t" style="font-family:Poppins,sans-serif;font-weight:700;font-size:20px;line-height:26px;color:#16240D;white-space:pre">' + ch + '</div>'
       : '';
     if (ch && box.nextElementSibling) box.nextElementSibling.focus();
+  });
+
+  // tidy typed prices on leaving the field: 12000 becomes 12.000
+  screensEl.addEventListener('focusout', function (e) {
+    var f = e.target.closest && e.target.closest('[data-price]');
+    if (!f) return;
+    var d = f.textContent.replace(/\D/g, '');
+    f.textContent = (d || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   });
 
   document.addEventListener('keydown', function (e) {
