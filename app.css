@@ -193,3 +193,7 @@ img, svg { display: block; }
 .ing-full [data-act="addIng"] { display: none !important }
 .ing { animation: rise 320ms var(--ease) both }
 .ing [contenteditable][aria-label="Nama bahan"] { color: #16240D !important }
+.scroll > * { flex-shrink: 0 }
+.cl-done { display: none !important }
+.recipe-done .cl-done { display: flex !important }
+.recipe-done .cl-todo { display: none !important }

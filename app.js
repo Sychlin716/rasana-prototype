@@ -26,6 +26,7 @@
   };
 
   var score = 0;
+  var recipeDone = false;   // set when the recipe is saved, so Beranda and Lengkapi agree
   var VIDEO_SECONDS = 192;   // 3:12
   var VIDEO_SPEED = 16;      // the prototype has no real video file, so playback is accelerated
   var video = { pct: 0, playing: false, raf: 0, last: 0, scr: null };
@@ -229,6 +230,7 @@
     var el = document.createElement('div');
     el.className = 'screen';
     el.dataset.key = key;
+    if (recipeDone) el.classList.add('recipe-done');
     el.innerHTML = byKey[key].html;
     // stagger the top-level blocks of the content column, capped so it never drags
     var content = el.querySelector('div[style*="flex:1 1 0"]');
@@ -334,7 +336,9 @@
     if (!link || link.getAttribute('aria-disabled') === 'true') return;
     var to = link.dataset.go;
     var dir = TABS[to] && TABS[current] ? 'fade' : /Kembali|Batalkan/.test(link.getAttribute('aria-label') || '') ? 'pop' : 'push';
-    navigate(to, dir, SAVED[current + '>' + to]);
+    var saved = dir !== 'pop';   // going back is not saving
+    if (saved && current === 'resep' && to === 'lengkapi') recipeDone = true;
+    navigate(to, dir, saved ? SAVED[current + '>' + to] : undefined);
   });
 
   screensEl.addEventListener('keydown', function (e) {
